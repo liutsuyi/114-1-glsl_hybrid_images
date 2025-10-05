@@ -1,9 +1,9 @@
 // Author:CMH
 // update:tsuyi
-// Step1: Load the first image and apply a low-pass filter.
-// Step2: Recursively applying a frame buffer can enhance the blur effect.
-// Step3: Load the second image and apply a high-pass filter.
-// Step4: Combine the two filtered images and fine-tune the result.
+// Step1: Load the first image and apply a low-pass filter. 讀取圖片1，添加低通濾波(遠距離)
+// Step2: Recursively applying a frame buffer can enhance the blur effect. 添加frame buffer機制，增強blur效果
+// Step3: Load the second image and apply a high-pass filter. 讀取圖片2，添加高通濾波(近距離)
+// Step4: Combine the two filtered images and fine-tune the result. 融合兩圖片並微調
 
 #ifdef GL_ES
 precision mediump float;
