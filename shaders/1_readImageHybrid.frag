@@ -1,10 +1,5 @@
 // Author:CMH
-// update:tsuyi
-
-// Step1: Load the first image and apply a low-pass filter. 讀取圖片1，添加低通濾波(遠距離)
-// Step2: Recursively applying a frame buffer can enhance the blur effect. 添加frame buffer機制，增強blur效果
-// Step3: Load the second image and apply a high-pass filter. 讀取圖片2，添加高通濾波(近距離)
-// Step4: Combine the two filtered images and fine-tune the result. 融合兩圖片並微調
+// Title:input image and kernel 
 
 #ifdef GL_ES
 precision mediump float;
@@ -13,18 +8,16 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_time;
-uniform sampler2D u_tex0; // High-pass source (near image)
-uniform sampler2D u_tex1; // Low-pass source (far image)
+uniform sampler2D u_tex0; //hig pass 
+uniform sampler2D u_tex1; //low pass
 
 void main() {
-    
-    // 1.Coordinate setup //
     vec2 st = gl_FragCoord.xy / u_resolution.xy;    
     vec2 uv = st; //[0~1]
     vec2 mouse= u_mouse.xy / u_resolution.xy;
     vec2 texel = 1.0 / u_resolution.xy;
 
-    // 2.Define Multi-scale Gaussian kernels //
+    // Multi-scale Gaussian kernels
     float kernelSmall[9];
     kernelSmall[0] = 1.0/16.0; kernelSmall[1] = 2.0/16.0; kernelSmall[2] = 1.0/16.0;
     kernelSmall[3] = 2.0/16.0; kernelSmall[4] = 4.0/16.0; kernelSmall[5] = 2.0/16.0;
@@ -46,7 +39,7 @@ void main() {
     offset[7] = vec2( 0,  1);
     offset[8] = vec2( 1,  1);
 
-    // 3.Step1: Low-pass filter (for far-distance image u_tex1) //
+    // Low pass: combine small and large blur on u_tex0
     vec3 blurSmall = vec3(0.0);
     vec3 blurLarge = vec3(0.0);
     for (int i = 0; i < 9; i++) {
@@ -54,9 +47,9 @@ void main() {
         blurSmall += texture2D(u_tex1, sampleUV).rgb * kernelSmall[i];
         blurLarge += texture2D(u_tex1, sampleUV).rgb * kernelLarge[i];
     }
-    vec3 lowpass = 0.5 * blurSmall + 0.5 * blurLarge;// Combine small and large kernels to simulate multi-pass blur
+    vec3 lowpass = 0.5 * blurSmall + 0.5 * blurLarge;
 
-    // 4.Step3: High-pass filter (for near-distance image u_tex0) //
+    // High pass: small kernel on u_tex1
     float strength = 2.5; // Increase this value for even stronger effect
     float kernel[9];
     kernel[0] = -1.0 * strength; kernel[1] = -1.0 * strength; kernel[2] = -1.0 * strength;
@@ -68,11 +61,10 @@ void main() {
         highpass += texture2D(u_tex0, sampleUV).rgb * kernel[i];
     }
 
-    // 5.Step4: Combine filtered results (hybrid fusion) //
+    // Multi-scale hybrid blend
     float lowpassWeight =1.0-0.5*mouse.y; //0.0;
     float highpassWeight = mouse.y+0.5;//1.0;
     vec3 hybrid = lowpass * lowpassWeight + highpass * highpassWeight;
-    
-    // Output final hybrid image //
+    //vec3 hybrid = max(lowpass * lowpassWeight, highpassWeight*highpass);
     gl_FragColor = vec4(hybrid, 1.0);
 }
