@@ -15,6 +15,7 @@ uniform vec2 u_mouse;
 uniform float u_time;
 uniform sampler2D u_tex0; // High-pass source (near image)
 uniform sampler2D u_tex1; // Low-pass source (far image)
+uniform sampler2D u_mask; // Masking pattern texture (e.g. paper grain, cloud)
 
 void main() {
     
@@ -71,10 +72,14 @@ void main() {
         highpass += texture2D(u_tex0, sampleUV).rgb * kernel[i];
     }
 
+    vec3 mask = texture2D(u_mask, uv).rgb; // 取得遮罩紋理
+    float maskWeight = 1.0 - mouse.x; // 畫面x向控制：遠距離融合為背景噪音，近距離減弱高頻清晰感
+    highpass = mix(highpass, highpass * mask, maskWeight); // 應用遮罩紋理
+
 
     // 5.Step4: Combine filtered results (hybrid fusion) //
-    float lowpassWeight =1.0-0.5*mouse.y; //0.0;
-    float highpassWeight = mouse.y+0.5;//1.0;
+    float lowpassWeight =1.0-0.5*mouse.y; //畫面y向控制：高、低頻混合比例
+    float highpassWeight = mouse.y+0.2;
     vec3 hybrid = lowpass * lowpassWeight + highpass * highpassWeight;
     
 
