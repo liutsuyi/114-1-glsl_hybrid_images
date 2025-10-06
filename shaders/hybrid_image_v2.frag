@@ -71,10 +71,37 @@ void main() {
         vec2 sampleUV = uv + offset[i] * texel;
         highpass += texture2D(u_tex0, sampleUV).rgb * kernel[i];
     }
+        // 4.1 High-pass fine-tuning //
+        vec3 mask = texture2D(u_mask, uv).rgb; // 取得遮罩紋理
+        float maskWeight = 1.0 - mouse.x; // 畫面x向控制：遠距離融合為背景噪音，近距離減弱高頻清晰感
+        highpass = mix(highpass, highpass * mask, maskWeight); // 應用遮罩紋理
 
-    vec3 mask = texture2D(u_mask, uv).rgb; // 取得遮罩紋理
-    float maskWeight = 1.0 - mouse.x; // 畫面x向控制：遠距離融合為背景噪音，近距離減弱高頻清晰感
-    highpass = mix(highpass, highpass * mask, maskWeight); // 應用遮罩紋理
+        // 橘色區域加權保留
+        float orangeMask = smoothstep(0.5, 1.0, highpass.r) * smoothstep(0.3, 1.0, highpass.g) * (1.0 - highpass.b);
+        highpass = mix(highpass, highpass * vec3(1.3, 1.1, 0.9), orangeMask * 0.5); // 依照色彩區域加權
+
+        // 加入白色噪點，減弱高頻深色輪廓線
+        float grainScale = 80.0; // 顆粒粗細，數值越大越細
+        float noise = fract(sin(dot(uv ,vec2(12.9898,78.233))) * 43758.5453); // 產生白色噪點
+        vec3 whiteNoise = vec3(noise);
+        float noiseStrength = 0.2; // 可調整噪點強度，0~0.5
+        highpass = mix(highpass, whiteNoise, noiseStrength * (1.0 - highpass.g)); // 噪點只影響較暗的區域
+        
+        // 可調強度的高頻模糊（blur）
+        float blurStrength = 0.4; // 可調整模糊強度，0~0.7
+        vec3 blur = vec3(0.0);
+        float blurKernel[9];
+        blurKernel[0]=1.0/16.0; blurKernel[1]=2.0/16.0; blurKernel[2]=1.0/16.0;
+        blurKernel[3]=2.0/16.0; blurKernel[4]=4.0/16.0; blurKernel[5]=2.0/16.0;
+        blurKernel[6]=1.0/16.0; blurKernel[7]=2.0/16.0; blurKernel[8]=1.0/16.0;
+        vec2 blurOffset[9];
+        blurOffset[0]=vec2(-1,-1); blurOffset[1]=vec2(0,-1); blurOffset[2]=vec2(1,-1);
+        blurOffset[3]=vec2(-1,0);  blurOffset[4]=vec2(0,0);  blurOffset[5]=vec2(1,0);
+        blurOffset[6]=vec2(-1,1);  blurOffset[7]=vec2(0,1);  blurOffset[8]=vec2(1,1);
+        for(int i=0;i<9;i++){
+            blur += texture2D(u_tex0, uv + blurOffset[i]*texel).rgb * blurKernel[i];
+        }
+        highpass = mix(highpass, blur, blurStrength);
 
 
     // 5.Step4: Combine filtered results (hybrid fusion) //
