@@ -78,9 +78,11 @@ void main() {
 
 
     // 5.Step4: Combine filtered results (hybrid fusion, threshold-based)
-    float luminance = dot(texture2D(u_tex0, uv).rgb, vec3(0.299,0.587,0.114));
-    float edgeMask = smoothstep(0.4, 0.6, luminance);
-    vec3 hybrid = mix(lowpass, highpass, edgeMask);
+        float luminance = dot(texture2D(u_tex0, uv).rgb, vec3(0.1,0.9,0.05));
+        float thresholdLow = 0.1 + 0.4 * mouse.y;   // mouse.y=0 → 0.3, mouse.y=1 → 0.7
+        float thresholdHigh = 0.8 + 0.4 * mouse.y;  // mouse.y=0 → 0.5, mouse.y=1 → 0.9
+        float edgeMask = smoothstep(thresholdLow, thresholdHigh, luminance);
+        vec3 hybrid = mix(lowpass, highpass, edgeMask);
 
     
     
