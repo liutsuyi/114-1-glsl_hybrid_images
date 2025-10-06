@@ -77,10 +77,11 @@ void main() {
     highpass = mix(highpass, highpass * mask, maskWeight); // 應用遮罩紋理
 
 
-    // 5.Step4: Combine filtered results (hybrid fusion) //
-    float lowpassWeight =1.0-0.5*mouse.y; //畫面y向控制：高、低頻混合比例
-    float highpassWeight = mouse.y+0.2;
-    vec3 hybrid = lowpass * lowpassWeight + highpass * highpassWeight;
+    // 5.Step4: Combine filtered results (hybrid fusion, threshold-based)
+    float luminance = dot(texture2D(u_tex0, uv).rgb, vec3(0.299,0.587,0.114));
+    float edgeMask = smoothstep(0.4, 0.6, luminance);
+    vec3 hybrid = mix(lowpass, highpass, edgeMask);
+
     
     
 
